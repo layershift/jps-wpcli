@@ -1,0 +1,87 @@
+type: update
+name: 'WordpressCLI'
+id: 'wpcli'
+homepage: https://github.com/layershift/jps-wpcli
+baseUrl: https://raw.githubusercontent.com/layershift/jps-wpcli/main
+logo: /images/wpcli.png?_r=${fn.random}
+
+categories:
+ - apps/others
+
+description:
+  text: /texts/description.md
+  short: Install and enable WordpressCLI
+
+targetNodes:
+  nodeGroup:
+  - cp
+
+menu:
+  - caption: Install WordpressCLI
+    loadingText: Installing WordpressCLI...
+    action: installWPcli
+  - caption: Uninstall WordpressCLI
+    loadingText: Uninstalling WordpressCLI...
+    confirmText: Are you sure you wish to uninstall WordpressCLI?
+    action: uninstallWPcli
+
+buttons:
+  - caption: Status
+    loadingText: Checking..
+    action: checkWPcli
+
+onAfterRedeployContainer:
+  installWPcli
+
+onInstall:
+  installWPcli
+
+onUninstall:
+  cmd [${targetNodes.nodeGroup}]:
+    - sed -i -e "s/^AllowTcpForwarding.*/AllowTcpForwarding no/" /etc/ssh/sshd_config
+    - service sshd restart
+  sayYes: true
+  user: root
+
+actions:
+  installWPcli:
+    - cmd [${targetNodes.nodeGroup}]:
+        - wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /usr/local/bin/wp
+        - chmod +x /usr/local/bin/wp
+      sayYes: true
+      user: root
+    - if (response.out.indexOf("Issue") !== -1):
+        message:  ${response.out}
+        script: |
+          return {'result': 2308, 'message': message.replace(/\n/g, '  \n')}
+
+  uninstallWPcli:
+    - cmd [${targetNodes.nodeGroup}]:
+        - rm -f /usr/local/bin/wp
+      user: root
+    - message: ${response.out}
+      script: |
+        return {'result': 2308, 'message': message.replace(/\n/g, '  \n')}
+
+  checkWPcli:
+    - cmd [${targetNodes.nodeGroup}]:
+        - if command -v wp &> /dev/null; then echo "WordpressCLI is installed"; else echo "WordpressCLI is not installed"; fi
+      user: root
+    - message: ${response.out}
+      script: |
+        return {'result': 2307, 'message': message.replace(/\n/g, '  \n')}
+
+responses:
+  2307:
+    type: info
+    message: Custom Success message!
+
+  2308:
+    type: success
+    message: Custom Success message!
+
+  2309:
+    type: error
+    message: Custom Success message!
+
+success: /texts/success.md

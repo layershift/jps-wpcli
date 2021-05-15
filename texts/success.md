@@ -1,0 +1,1 @@
+WordpressCLI state changed
